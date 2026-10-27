@@ -301,7 +301,7 @@
     if (shake > 0) { shake -= dt; camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake; }
     _look.set(r.pos.x - Math.sin(camYaw) * 5, r.pos.y + 1.5, r.pos.z - Math.cos(camYaw) * 5);
     camera.lookAt(_look);
-    const fov = 66 + clamp(r.speed / 62, 0, 1) * 10 + (boost ? 6 : 0);
+    const fov = 66 + clamp(r.speed / 62, 0, 1) * 10 + (boost ? 6 : 0) + (camera.aspect < 1 ? 24 : 0);
     if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 4); camera.updateProjectionMatrix(); }
   }
   function introCam(dt) {
@@ -464,7 +464,23 @@
     renderer.render(scene, camera);
   }
 
-  function checkRotate() { show('rotate', isTouch && innerHeight > innerWidth); }
+  let rotateSkipped = false;
+  function checkRotate() { show('rotate', isTouch && !rotateSkipped && innerHeight > innerWidth); }
+  function setupRotate() {
+    $('rotSkipBtn').onclick = () => { rotateSkipped = true; checkRotate(); };
+    $('rotLockBtn').onclick = async () => {
+      try {
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (req && !document.fullscreenElement) await req.call(el);
+        if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+      } catch (e) {
+        $('rotTip').textContent = '这个浏览器不支持自动横屏：请在下拉菜单里打开「自动旋转」后把手机横过来，或点「竖屏继续」';
+      }
+      setTimeout(onResize, 400);
+    };
+    addEventListener('orientationchange', () => setTimeout(onResize, 300));
+  }
   function onResize() {
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
@@ -485,7 +501,7 @@
     items = new ITEMS.Items(scene);
     buildMinimap();
     setupMenu();
-    addEventListener('resize', onResize); checkRotate();
+    addEventListener('resize', onResize); setupRotate(); checkRotate();
     LD('首帧渲染');
     renderer.render(scene, camera);
     window.GAME_READY = true;
