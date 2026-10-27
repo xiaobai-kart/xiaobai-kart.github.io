@@ -473,16 +473,22 @@
 
   // ---------- 启动 ----------
   function boot() {
+    LD('创建 WebGL 渲染器');
     renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: !Q.mobile, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, Q.mobile ? 1.5 : 2));
     renderer.setSize(innerWidth, innerHeight, false);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.3, 4200);
+    LD('搭建世界');
     WORLD.build(scene, Q);
+    LD('准备道具和菜单');
     items = new ITEMS.Items(scene);
     buildMinimap();
     setupMenu();
     addEventListener('resize', onResize); checkRotate();
+    LD('首帧渲染');
+    renderer.render(scene, camera);
+    window.GAME_READY = true;
     show('loading', false); show('menu', true);
     state = 'menu';
     requestAnimationFrame(frame);
@@ -495,6 +501,6 @@
 
   KID.load().then(() => setTimeout(() => {
     try { boot(); }
-    catch (err) { console.error(err); $('loading').innerHTML = '<div>😢 加载失败</div><div class="tiny">' + String(err && err.message || err) + '</div>'; }
-  }, 30));
+    catch (err) { console.error(err); LD.fail(String(err && err.message || err) + ' | ' + String(err && err.stack || '').split('\n').slice(0, 3).join(' ← ')); }
+  }, 30), err => LD.fail(String(err && err.message || err)));
 })();

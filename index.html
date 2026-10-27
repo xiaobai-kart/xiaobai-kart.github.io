@@ -145,7 +145,31 @@
 <body>
 <canvas id="gl"></canvas>
 
-<div id="loading" class="ol"><div>🏁 正在搭建赛道…</div><div class="bar"><i></i></div><div class="tiny">第一次打开需要几秒钟</div></div>
+<div id="loading" class="ol"><div>🏁 正在搭建赛道…</div><div class="bar"><i></i></div><div class="tiny">第一次打开需要几秒钟</div><div class="tiny" id="ldStep" style="opacity:.6"></div></div>
+<script>
+// 加载诊断：显示当前步骤，任何报错都直接显示在加载页上
+(function () {
+  var t0 = Date.now(), el = document.getElementById('ldStep');
+  var LD = window.LD = function (s) { LD.last = s; if (el) el.textContent = s + ' · ' + ((Date.now() - t0) / 1000).toFixed(1) + 's'; };
+  LD.fail = function (msg) {
+    var b = document.getElementById('loading');
+    if (window.GAME_READY || !b || LD.failed) return;
+    LD.failed = true;
+    b.innerHTML = '<div>😢 加载失败，请截图发给开发者</div>' +
+      '<div class="tiny" style="max-width:88vw;word-break:break-all;user-select:text">' + String(msg).replace(/</g, '&lt;') + '</div>' +
+      '<div class="tiny">卡在：' + (LD.last || '') + ' · ' + ((Date.now() - t0) / 1000).toFixed(1) + 's</div>' +
+      '<div class="tiny" style="max-width:88vw;word-break:break-all;opacity:.6">' + navigator.userAgent + '</div>';
+  };
+  addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t !== window && (t.src || t.href)) LD.fail('文件加载失败：' + (t.src || t.href).split('/').pop().slice(0, 60));
+    else LD.fail((e.message || '脚本错误') + ' @ ' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || ''));
+  }, true);
+  addEventListener('unhandledrejection', function (e) { LD.fail('Promise: ' + (e.reason && (e.reason.message || e.reason.type) || e.reason)); });
+  setInterval(function () { if (!window.GAME_READY && !LD.failed) LD(LD.last); }, 500);
+  LD('下载脚本');
+})();
+</script>
 
 <div id="menu" class="ol hidden">
   <div class="panel">
@@ -217,6 +241,12 @@
 <script src="js/kart.js"></script>
 <script src="js/items.js"></script>
 <script src="js/audio.js"></script>
+<script>
+(function () {
+  var miss = ['THREE', 'MASCOT', 'KART_IMG', 'TRACK', 'KID', 'WORLD', 'KART', 'ITEMS', 'AUDIO'].filter(function (k) { return !window[k]; });
+  if (miss.length) LD.fail('脚本没有运行：' + miss.join(', '));
+})();
+</script>
 <script src="js/game.js"></script>
 </body>
 </html>

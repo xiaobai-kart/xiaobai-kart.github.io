@@ -24,15 +24,18 @@
 
   const KIMG = {};
   function load() {
-    const one = (src, put) => new Promise((res, rej) => {
+    const total = Object.keys(M).length + Object.keys(window.KART_IMG).length;
+    let done = 0;
+    const one = (src, put, name) => new Promise((res, rej) => {
       const im = new Image();
-      im.onload = () => { put(im); res(); };
-      im.onerror = rej;
+      im.onload = () => { put(im); done++; if (window.LD) LD(`解码图片 ${done}/${total}`); res(); };
+      im.onerror = () => rej(new Error('图片解码失败：' + name));
       im.src = src;
     });
+    if (window.LD) LD(`解码图片 0/${total}`);
     return Promise.all([
-      ...Object.keys(M).map(k => one(M[k], im => { IMG[k] = im; })),
-      ...Object.keys(window.KART_IMG).map(k => one(window.KART_IMG[k], im => { KIMG[k] = im; }))
+      ...Object.keys(M).map(k => one(M[k], im => { IMG[k] = im; }, k)),
+      ...Object.keys(window.KART_IMG).map(k => one(window.KART_IMG[k], im => { KIMG[k] = im; }, 'kart-' + k))
     ]);
   }
 
