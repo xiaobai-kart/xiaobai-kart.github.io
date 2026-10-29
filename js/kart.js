@@ -3,6 +3,7 @@
   const T = window.TRACK;
   const P = { maxSpeed: 44, accel: 24, boostSpeed: 62, turn: 1.8, reverse: -12 };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const _camDir = new THREE.Vector3();
   const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
   const wrapS = d => { const L = T.L; d %= L; if (d > L / 2) d -= L; if (d < -L / 2) d += L; return d; };
 
@@ -234,10 +235,14 @@
       r.rotation.z += (roll - r.rotation.z) * Math.min(1, dt * 8);
       const fv = this.boostT > 0;
       this.flames.forEach(f => { f.visible = fv; if (fv) f.scale.set(1, 0.8 + Math.random() * 0.6, 1); });
-      // 按镜头相对车头的方位选视角
+      // 按镜头相对车头的方位选视角。贴图总是正对镜头平面，只按方位角会让镜头两侧并排的车显得歪着，
+      // 所以主要按镜头朝向算，方位角只占一部分
+      camera.getWorldDirection(_camDir);
       const dx = camera.position.x - this.pos.x, dz = camera.position.z - this.pos.z;
+      const camL = Math.hypot(dx, dz) || 1, fwdL = Math.hypot(_camDir.x, _camDir.z) || 1;
+      const vx = 0.3 * dx / camL - 0.7 * _camDir.x / fwdL, vz = 0.3 * dz / camL - 0.7 * _camDir.z / fwdL;
       const H = this.heading + this.spinA;
-      const lf = -Math.sin(H) * dx - Math.cos(H) * dz, lr = Math.cos(H) * dx - Math.sin(H) * dz;
+      const lf = -Math.sin(H) * vx - Math.cos(H) * vz, lr = Math.cos(H) * vx - Math.sin(H) * vz;
       const ang = Math.abs(Math.atan2(lr, lf)) * 180 / Math.PI;
       const CENTER = { front: 0, front34: 45, side: 90, rear34: 135, rear: 180 };
       if (Math.abs(ang - CENTER[this.view]) > 28.5) {

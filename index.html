@@ -214,7 +214,7 @@
   }, true);
   addEventListener('unhandledrejection', function (e) { LD.fail('Promise: ' + (e.reason && (e.reason.message || e.reason.type) || e.reason)); });
   var nJs = 0, slow = false;
-  addEventListener('load', function (e) {
+  document.addEventListener('load', function (e) {
     var t = e.target;
     if (t && t.tagName === 'SCRIPT' && t.src && /^下载脚本/.test(LD.last)) LD('下载脚本 ' + (++nJs) + '/10');
   }, true);
