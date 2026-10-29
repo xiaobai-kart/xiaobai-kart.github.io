@@ -11,7 +11,6 @@
     get(k, d) { try { const v = localStorage.getItem('xbk-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('xbk-' + k, JSON.stringify(v)); } catch (e) {} }
   };
-  Object.assign(settings, store.get('adv', {}));
   const SKILL = { easy: 0.84, normal: 0.93, hard: 1.0 };
 
   let renderer, scene, camera, items, racers = [], player = null;
@@ -211,10 +210,12 @@
   // ---------- 数学题关卡：每局结束后答对 5 道 50 以内加减法才能开下一局 ----------
   const rand = n => Math.floor(Math.random() * n);
   const quiz = {
-    open: false, need: 5, done: 0, q: null, input: '', next: null, busy: false, used: null,
+    open: false, need: 5, done: 0, q: null, input: '', next: null, busy: false, used: null, single: false,
     pending() { return !!store.get('quiz', false); },
     require() { store.set('quiz', true); },
     gate(next) { if (this.pending()) this.show(next); else next(); },
+    // 开启高级功能：答对 1 道即可，可取消
+    unlock(title, next) { this.show(next, 1, `🔓 答对 1 道题，开启${title}`, '取消'); },
     make() {
       let q;
       do {
@@ -224,8 +225,9 @@
       this.used.add(q.text);
       return q;
     },
-    show(next) {
-      this.next = next; this.done = 0; this.used = new Set(); this.open = true;
+    show(next, need = 5, title = '🧮 答对 5 道题，开始下一局', cancel = '返回菜单') {
+      this.next = next; this.need = need; this.single = need === 1; this.done = 0; this.used = new Set(); this.open = true;
+      $('qTitle').textContent = title; $('qMenuBtn').textContent = cancel;
       if (!$('qPad').children.length) {
         for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok']) {
           const b = document.createElement('button');
@@ -259,8 +261,8 @@
         this.done++; this.busy = true; A.sfx('item');
         this.render(); qq.classList.add('good');
         if (this.done >= this.need) {
-          store.set('quiz', false);
-          $('qMsg').textContent = '🎉 全部答对，出发！';
+          if (!this.single) store.set('quiz', false);
+          $('qMsg').textContent = this.single ? '🎉 答对了，已开启！' : '🎉 全部答对，出发！';
           setTimeout(() => { this.close(); this.next && this.next(); }, 800);
         } else {
           $('qMsg').textContent = '✅ 答对了！';
@@ -313,9 +315,10 @@
       $('autoBtn').classList.toggle('on', settings.auto);
     };
     chips.forEach(b => b.onclick = () => {
-      settings[b.dataset.k] = !settings[b.dataset.k];
-      store.set('adv', Object.fromEntries(ADV_KEYS.map(k => [k, settings[k]])));
-      syncAdv(); A.sfx('click');
+      const k = b.dataset.k;
+      A.sfx('click');
+      if (settings[k]) { settings[k] = false; syncAdv(); return; }
+      quiz.unlock(`「${b.textContent.trim()}」`, () => { settings[k] = true; syncAdv(); });
     });
     $('advTog').onclick = () => {
       const open = $('advBox').classList.toggle('hidden') === false;
@@ -324,7 +327,6 @@
     syncAdv();
     toggleAuto = () => {
       settings.auto = !settings.auto;
-      store.set('adv', Object.fromEntries(ADV_KEYS.map(k => [k, settings[k]])));
       syncAdv(); A.sfx('click');
       toast(settings.auto ? '🤖 自动巡航已开启' : '🎮 已切换为手动驾驶', 'info');
     };
@@ -339,7 +341,7 @@
     $('restartBtn').onclick = () => { show('pause', false); quiz.gate(startRace); };
     $('menuBtn').onclick = toMenu; $('resMenuBtn').onclick = toMenu;
     $('againBtn').onclick = () => { show('results', false); quiz.gate(startRace); };
-    $('qMenuBtn').onclick = () => { quiz.close(); toMenu(); };
+    $('qMenuBtn').onclick = () => { const single = quiz.single; quiz.close(); if (!single) toMenu(); };
     $('pauseBtn').onclick = () => { if (state === 'race' || state === 'countdown') pause(); };
     $('muteBtn').onclick = () => { A.setMuted(!A.muted); $('muteBtn').textContent = A.muted ? '🔇' : '🔊'; };
     $('gl').addEventListener('pointerdown', () => { if (state === 'intro') skipIntro(); });
