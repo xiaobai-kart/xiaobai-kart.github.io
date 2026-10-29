@@ -364,5 +364,18 @@
     return inp;
   }
 
-  window.KART = { Racer, aiInput, pilotInput, P, wrapS, angDiff, clamp };
+  // ---------- 自动漂移：顺着弯道方向打方向就自动起漂，漂满拿加速，弯道结束或反打方向就收 ----------
+  function autoDrift(r, inp) {
+    if (inp.brake) return inp;
+    let nearC = 0;
+    for (let k = 1; k < 10; k++) nearC += T.S[(r.idx + k) % T.N].curv / 9;
+    const turnDir = -Math.sign(nearC), steerDir = Math.abs(inp.steer) > 0.15 ? Math.sign(inp.steer) : 0;
+    if (r.drift) {
+      const sameWay = turnDir === r.driftDir && Math.abs(nearC) > 1 / 220;
+      inp.drift = inp.drift || (steerDir !== -r.driftDir && (sameWay || (r.driftT < 0.85 && steerDir === r.driftDir)));
+    } else if (Math.abs(nearC) > 1 / 140 && r.speed > 20 && steerDir === turnDir && Math.abs(inp.steer) > 0.3) inp.drift = true;
+    return inp;
+  }
+
+  window.KART = { Racer, aiInput, pilotInput, autoDrift, P, wrapS, angDiff, clamp };
 })();

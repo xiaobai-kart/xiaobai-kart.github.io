@@ -1,12 +1,12 @@
 // 主程序：初始化、输入、镜头、比赛流程、界面
 (function () {
   const T = window.TRACK, Z = T.ZONES, A = window.AUDIO;
-  const { Racer, aiInput, pilotInput, clamp, angDiff } = window.KART;
+  const { Racer, aiInput, pilotInput, autoDrift, clamp, angDiff } = window.KART;
   const $ = id => document.getElementById(id);
   const isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   const Q = { mobile: isTouch };
-  const settings = { diff: 'normal', laps: 2, color: 'red', steer: 'btn', auto: false, infNitro: false, infItems: false };
-  const ADV_KEYS = ['auto', 'infNitro', 'infItems'];
+  const settings = { diff: 'normal', laps: 2, color: 'red', steer: 'btn', auto: false, autoDrift: false, infNitro: false, infItems: false };
+  const ADV_KEYS = ['auto', 'autoDrift', 'infNitro', 'infItems'];
   const store = {
     get(k, d) { try { const v = localStorage.getItem('xbk-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('xbk-' + k, JSON.stringify(v)); } catch (e) {} }
@@ -471,6 +471,7 @@
           if (inp.nitro) player.useNitro();
           autoItem();
         } else inp = playerInput();
+        if (settings.autoDrift) autoDrift(player, inp);
         if (pressed.item) { items.use(player, race); }
         if (pressed.nitro) { if (!player.useNitro()) toast('没有氮气：先漂移积攒', ''); }
       } else {
