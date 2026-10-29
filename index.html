@@ -153,7 +153,10 @@
     #centerMsg { font-size: 80px; } .rk { font-size: 12px; min-width: 96px; } .rk img { display: none; }
     #speedo b { font-size: 34px; } #nitroBox { width: 170px; } #bottom { bottom: 8px; }
     #pauseBtn { right: 136px; } #muteBtn { right: 182px; } #autoBtn { right: 228px; }
-    .chips { margin-top: 5px; gap: 6px; } .chip { padding: 5px 10px; font-size: 13px; } .adv-tog { padding: 4px 10px; font-size: 12px; }
+    .row > label { display: none; }
+    .advrow { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+    .advrow .lg, #advSum { display: none; }
+    .chips { margin-top: 0; gap: 5px; flex-wrap: nowrap; } .chip { padding: 5px 9px; font-size: 13px; white-space: nowrap; } .adv-tog { padding: 5px 8px; font-size: 12px; white-space: nowrap; }
     .go { position: sticky; bottom: 0; z-index: 2; }
     .quizbox { gap: 18px; } .quizbox h2 { font-size: 17px; } .qq { font-size: 36px; } .pad { grid-template-columns: repeat(3, 58px); gap: 7px; } .pad button { height: 46px; font-size: 21px; }
     .pd img { height: 80px; } .box { padding: 14px 18px; } .box h2 { font-size: 22px; margin-bottom: 6px; }
@@ -228,9 +231,9 @@
       <div class="row"><label>选择你的衣服颜色</label><div class="swatches" id="swatches"></div></div>
       <div class="row touch-only hidden"><label>手机转向方式</label>
         <div class="seg" id="segSteer"><button data-v="btn" class="on">按钮</button><button data-v="gyro">重力感应</button><button data-v="gyroR">重力（反向）</button></div></div>
-      <div class="row"><button class="adv-tog" id="advTog">⚙️ 高级选项 <span id="advSum"></span> <span id="advArrow">▾</span></button>
-        <div class="chips hidden" id="advBox">
-          <button class="chip" data-k="auto">🤖 自动巡航</button><button class="chip" data-k="infNitro">🔥 无限氮气</button><button class="chip" data-k="infItems">🎁 无限道具</button>
+      <div class="row advrow"><button class="adv-tog" id="advTog">⚙️ 高级<span class="lg">选项</span> <span id="advSum"></span> <span id="advArrow">▴</span></button>
+        <div class="chips" id="advBox">
+          <button class="chip" data-k="auto">🤖 <span class="lg">自动</span>巡航</button><button class="chip" data-k="infNitro">🔥 <span class="lg">无限</span>氮气</button><button class="chip" data-k="infItems">🎁 <span class="lg">无限</span>道具</button>
         </div></div>
       <button class="go" id="startBtn">开始比赛</button>
       <div class="help desk-only">
