@@ -313,5 +313,56 @@
     return inp;
   }
 
-  window.KART = { Racer, aiInput, P, wrapS, angDiff, clamp };
+  // ---------- 自动巡航（大师级）：走赛车线、弯道漂移攒氮气、直道放氮气、避让、脱困 ----------
+  function pilotInput(r, race, t, dt) {
+    // 前方 2~60 米的加权曲率决定内外线：curv > 0 为左弯，内线在左（lat < 0）
+    let cs = 0, ws = 0;
+    for (let k = 1; k < 30; k++) { const w = 1 - k / 30; cs += T.S[(r.idx + k) % T.N].curv * w; ws += w; }
+    const cav = cs / ws;
+    const look = 8 + Math.max(10, r.speed) * 0.45;
+    const a = T.at(r.s + look);
+    const room = a.w - 3.4;
+    // 朝前方瞄准点直线行驶会切进弯心（弦高 ≈ look² / 8R），把瞄准点往弯外补偿
+    let lane = clamp(-cav * 120, -1, 1) * room + clamp(T.S[a.i].curv * look * look / 8, -2.5, 2.5);
+    for (const bn of race.items.bananas) {
+      const ds = wrapS(bn.s - r.s);
+      if (ds > 0 && ds < 50 && Math.abs(bn.lat - lane) < 3) lane = clamp(bn.lat + (bn.lat > lane ? -3.4 : 3.4), -room, room);
+    }
+    for (const o of race.racers) {
+      if (o === r) continue;
+      const ds = wrapS(o.s - r.s);
+      if (ds > 0 && ds < 16 && Math.abs(o.lat - lane) < 2.8 && o.speed < r.speed - 1) lane = clamp(o.lat + (o.lat > lane ? -3.2 : 3.2), -room, room);
+    }
+    const tx = a.p.x + a.r.x * lane, tz = a.p.z + a.r.z * lane;
+    const desired = Math.atan2(-(tx - r.pos.x), -(tz - r.pos.z));
+    const diff = angDiff(desired, r.heading);
+    let steer = clamp(-diff * 3.2, -1, 1);
+
+    let maxC = 0;
+    const span = Math.ceil((14 + r.speed * 1.15) / T.STEP);
+    for (let k = 2; k < span; k++) maxC = Math.max(maxC, Math.abs(T.S[(r.idx + k) % T.N].curv));
+    const target = Math.min(P.maxSpeed, maxC > 1e-4 ? 1.9 / maxC : 999);
+    const inp = { steer, throttle: r.speed < target + 2, brake: r.speed > target + 10, drift: false };
+    // 漂移：只漂急弯（半径 < 50 米），且至少漂满 0.85 秒拿到漂移加速；弯道结束或方向反了就收
+    let nearC = 0;
+    for (let k = 1; k < 10; k++) nearC += T.S[(r.idx + k) % T.N].curv / 9;
+    if (r.drift) {
+      const sameWay = Math.sign(-nearC) === r.driftDir;
+      inp.drift = r.driftT < 0.85 ? Math.abs(nearC) > 1 / 160 || sameWay : sameWay && Math.abs(nearC) > 1 / 80;
+    } else inp.drift = maxC > 1 / 50 && Math.abs(nearC) > 1 / 70 && r.speed > 22 && Math.abs(steer) > 0.25;
+    // 直道放氮气
+    let ahead = 0;
+    for (let k = 2; k < 36; k++) ahead = Math.max(ahead, Math.abs(T.S[(r.idx + k) % T.N].curv));
+    if (r.nitroCount > 0 && r.boostT <= 0 && !r.drift && ahead < 1 / 130) inp.nitro = true;
+    // 脱困：低速卡住时倒车，倒车时打向目标方向让车头转回来
+    r.pStuck = (r.speed < 4 && !r.air && r.stunT <= 0 && r.spinT <= 0) ? (r.pStuck || 0) + dt : 0;
+    if (r.pStuck > 1.2) r.pBack = 0.9;
+    if (r.pBack > 0) {
+      r.pBack -= dt;
+      return { steer: Math.sign(diff || 1), throttle: false, brake: true, drift: false };
+    }
+    return inp;
+  }
+
+  window.KART = { Racer, aiInput, pilotInput, P, wrapS, angDiff, clamp };
 })();

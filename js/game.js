@@ -1,11 +1,17 @@
 // 主程序：初始化、输入、镜头、比赛流程、界面
 (function () {
   const T = window.TRACK, Z = T.ZONES, A = window.AUDIO;
-  const { Racer, aiInput, clamp, angDiff } = window.KART;
+  const { Racer, aiInput, pilotInput, clamp, angDiff } = window.KART;
   const $ = id => document.getElementById(id);
   const isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   const Q = { mobile: isTouch };
-  const settings = { diff: 'normal', laps: 2, color: 'red', steer: 'btn' };
+  const settings = { diff: 'normal', laps: 2, color: 'red', steer: 'btn', auto: false, infNitro: false, infItems: false };
+  const ADV_KEYS = ['auto', 'infNitro', 'infItems'];
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('xbk-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('xbk-' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  Object.assign(settings, store.get('adv', {}));
   const SKILL = { easy: 0.84, normal: 0.93, hard: 1.0 };
 
   let renderer, scene, camera, items, racers = [], player = null;
@@ -18,8 +24,10 @@
   let gyroSteer = 0;
   const pressed = { item: false, nitro: false };
   addEventListener('keydown', e => {
+    if (quiz.open) { quiz.key(e); return; }
     if (e.repeat) { keys[e.code] = true; return; }
     keys[e.code] = true;
+    if (e.code === 'KeyQ' && (state === 'race' || state === 'countdown')) toggleAuto();
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     if (state === 'intro') { skipIntro(); return; }
     if (e.code === 'Escape' || e.code === 'KeyP') { if (state === 'race' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
@@ -200,6 +208,82 @@
     drawMinimap();
   }
 
+  // ---------- 数学题关卡：每局结束后答对 5 道 50 以内加减法才能开下一局 ----------
+  const rand = n => Math.floor(Math.random() * n);
+  const quiz = {
+    open: false, need: 5, done: 0, q: null, input: '', next: null, busy: false, used: null,
+    pending() { return !!store.get('quiz', false); },
+    require() { store.set('quiz', true); },
+    gate(next) { if (this.pending()) this.show(next); else next(); },
+    make() {
+      let q;
+      do {
+        if (Math.random() < 0.5) { const a = 1 + rand(49), b = 1 + rand(50 - a); q = { text: `${a} + ${b}`, ans: a + b }; }
+        else { const a = 2 + rand(49), b = 1 + rand(a - 1); q = { text: `${a} − ${b}`, ans: a - b }; }
+      } while (this.used.has(q.text));
+      this.used.add(q.text);
+      return q;
+    },
+    show(next) {
+      this.next = next; this.done = 0; this.used = new Set(); this.open = true;
+      if (!$('qPad').children.length) {
+        for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok']) {
+          const b = document.createElement('button');
+          b.textContent = k === 'del' ? '⌫' : k === 'ok' ? '确定' : k;
+          if (k === 'del' || k === 'ok') b.className = k;
+          b.onclick = () => this.press(k);
+          $('qPad').appendChild(b);
+        }
+      }
+      show('quiz', true);
+      this.newQ();
+    },
+    newQ() { this.q = this.make(); this.input = ''; this.busy = false; $('qMsg').innerHTML = '&nbsp;'; this.render(); },
+    render() {
+      $('qText').textContent = this.q.text;
+      $('qAns').textContent = this.input || '?';
+      $('qProg').innerHTML = Array.from({ length: this.need }, (_, i) => `<i class="${i < this.done ? 'ok' : i === this.done ? 'cur' : ''}"></i>`).join('');
+      const qq = document.querySelector('.qq'); qq.classList.remove('good', 'bad');
+    },
+    press(k) {
+      if (this.busy) return;
+      if (k === 'del') this.input = this.input.slice(0, -1);
+      else if (k === 'ok') return this.check();
+      else if (this.input.length < 2) this.input = (this.input === '0' ? '' : this.input) + k;
+      this.render();
+    },
+    check() {
+      if (!this.input) return;
+      const qq = document.querySelector('.qq');
+      if (Number(this.input) === this.q.ans) {
+        this.done++; this.busy = true; A.sfx('item');
+        this.render(); qq.classList.add('good');
+        if (this.done >= this.need) {
+          store.set('quiz', false);
+          $('qMsg').textContent = '🎉 全部答对，出发！';
+          setTimeout(() => { this.close(); this.next && this.next(); }, 800);
+        } else {
+          $('qMsg').textContent = '✅ 答对了！';
+          setTimeout(() => this.newQ(), 600);
+        }
+      } else {
+        A.sfx('hit');
+        $('qMsg').textContent = '❌ 不对哦，再算一算';
+        this.input = ''; this.render();
+        void qq.offsetWidth; qq.classList.add('bad');
+      }
+    },
+    close() { this.open = false; show('quiz', false); },
+    key(e) {
+      if (/^(Digit|Numpad)\d$/.test(e.code)) this.press(e.code.slice(-1));
+      else if (e.code === 'Backspace') this.press('del');
+      else if (e.code === 'Enter' || e.code === 'NumpadEnter') this.press('ok');
+      else return;
+      e.preventDefault();
+    }
+  };
+  let toggleAuto = () => {};
+
   // ---------- 流程 ----------
   function show(id, on) { $(id).classList.toggle('hidden', !on); }
 
@@ -221,16 +305,41 @@
       document.querySelectorAll('.desk-only').forEach(e => e.classList.add('hidden'));
       document.body.classList.add('touchmode');
     }
+    const chips = $('advBox').querySelectorAll('.chip');
+    const syncAdv = () => {
+      chips.forEach(b => b.classList.toggle('on', !!settings[b.dataset.k]));
+      const n = ADV_KEYS.filter(k => settings[k]).length;
+      $('advSum').textContent = n ? `已开 ${n} 项` : '';
+      $('autoBtn').classList.toggle('on', settings.auto);
+    };
+    chips.forEach(b => b.onclick = () => {
+      settings[b.dataset.k] = !settings[b.dataset.k];
+      store.set('adv', Object.fromEntries(ADV_KEYS.map(k => [k, settings[k]])));
+      syncAdv(); A.sfx('click');
+    });
+    $('advTog').onclick = () => {
+      const open = $('advBox').classList.toggle('hidden') === false;
+      $('advArrow').textContent = open ? '▴' : '▾'; A.sfx('click');
+    };
+    syncAdv();
+    toggleAuto = () => {
+      settings.auto = !settings.auto;
+      store.set('adv', Object.fromEntries(ADV_KEYS.map(k => [k, settings[k]])));
+      syncAdv(); A.sfx('click');
+      toast(settings.auto ? '🤖 自动巡航已开启' : '🎮 已切换为手动驾驶', 'info');
+    };
+    $('autoBtn').onclick = () => { if (state === 'race' || state === 'countdown') toggleAuto(); };
     $('startBtn').onclick = () => {
       A.init(); A.sfx('click');
       if (isTouch && settings.steer !== 'btn') enableGyro();
       if (isTouch && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-      startRace();
+      quiz.gate(startRace);
     };
     $('resumeBtn').onclick = resume;
-    $('restartBtn').onclick = () => { show('pause', false); startRace(); };
+    $('restartBtn').onclick = () => { show('pause', false); quiz.gate(startRace); };
     $('menuBtn').onclick = toMenu; $('resMenuBtn').onclick = toMenu;
-    $('againBtn').onclick = () => { show('results', false); startRace(); };
+    $('againBtn').onclick = () => { show('results', false); quiz.gate(startRace); };
+    $('qMenuBtn').onclick = () => { quiz.close(); toMenu(); };
     $('pauseBtn').onclick = () => { if (state === 'race' || state === 'countdown') pause(); };
     $('muteBtn').onclick = () => { A.setMuted(!A.muted); $('muteBtn').textContent = A.muted ? '🔇' : '🔊'; };
     $('gl').addEventListener('pointerdown', () => { if (state === 'intro') skipIntro(); });
@@ -353,7 +462,15 @@
     for (const r of racers) {
       let inp;
       if (r === player && !r.finished) {
-        inp = playerInput();
+        if (settings.infNitro) player.nitroCount = 2;
+        if (settings.infItems && !player.item && player.rollT <= 0) {
+          player.pending = ITEMS.roll(race.rankOf(player), racers.length); player.rollT = 0.45; player.emit('itemRoll');
+        }
+        if (settings.auto) {
+          inp = pilotInput(player, race, raceT, dt);
+          if (inp.nitro) player.useNitro();
+          autoItem();
+        } else inp = playerInput();
         if (pressed.item) { items.use(player, race); }
         if (pressed.nitro) { if (!player.useNitro()) toast('没有氮气：先漂移积攒', ''); }
       } else {
@@ -382,6 +499,15 @@
     collide();
     items.update(dt, clockT, race);
     racers.forEach(processEvents);
+  }
+
+  // 自动巡航用道具：护盾留着挡追来的水弹，其余按 AI 规则
+  function autoItem() {
+    const p = player;
+    if (p.item !== 'shield') return items.aiUse(p, race);
+    if (p.stunT > 0 || p.shieldT > 0) return;
+    const incoming = items.bombs.some(b => b.target === p && b.owner !== p);
+    if (incoming || p.itemHold > 20) items.use(p, race);
   }
 
   function onPlayerFinish() {
@@ -413,6 +539,7 @@
       const r = rk[i], h = hs[[1, 0, 2].indexOf(i)];
       return `<div class="pd"><img src="${KID.figureURL(r.color, { k: 2 })}"><div class="nm">${r === player ? '我' : r.name}</div><div class="blk" style="height:${h * 0.5}px;background:${cols[[1, 0, 2].indexOf(i)]}">${i + 1}</div></div>`;
     }).join('');
+    quiz.require();
     $('resTable').innerHTML = rk.map((r, i) => `<tr class="${r === player ? 'me' : ''}"><td>${i + 1}</td><td>${r === player ? '我' : r.name}</td><td>${fmt(r.finishTime)}${r.estimated ? ' *' : ''}</td><td>${isFinite(r.bestLap) ? '最快圈 ' + fmt(r.bestLap) : ''}</td></tr>`).join('');
     show('results', true);
     state = 'results';
@@ -437,7 +564,7 @@
       for (const r of racers) r.render(dt, camera, clockT);
     } else if (state === 'countdown') {
       const left = 3.6 - stateT, n = Math.ceil(left);
-      const inp = playerInput();
+      const inp = settings.auto ? { throttle: left < 0.55 } : playerInput();
       if (inp.throttle && throttleDownAt < 0) throttleDownAt = left;
       if (!inp.throttle) throttleDownAt = -1;
       if (n !== countLast && n > 0 && n <= 3) { countLast = n; center(String(n)); A.sfx('count'); }
@@ -511,7 +638,7 @@
   }
 
   window.GAME = {
-    get player() { return player; }, race, get state() { return state; },
+    get player() { return player; }, race, get state() { return state; }, settings, quiz, get raceT() { return raceT; },
     teleport(s, lat = 0) { if (player) { player.reset(s, lat); player.dist = s; player.prevS = player.s; camYaw = player.heading; camH = player.pos.y + 3.1; } }
   };
 

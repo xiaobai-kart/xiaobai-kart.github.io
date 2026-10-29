@@ -85,6 +85,27 @@
   #nitroCnt { font-size: 18px; letter-spacing: 2px; }
   #pauseBtn { position: absolute; right: 196px; top: 14px; pointer-events: auto; width: 40px; height: 40px; border-radius: 12px; border: 0; color: #fff; font-size: 18px; background: rgba(8,12,30,.55); cursor: pointer; }
   #muteBtn { position: absolute; right: 244px; top: 14px; pointer-events: auto; width: 40px; height: 40px; border-radius: 12px; border: 0; color: #fff; font-size: 18px; background: rgba(8,12,30,.55); cursor: pointer; }
+  #autoBtn { position: absolute; right: 292px; top: 14px; pointer-events: auto; width: 40px; height: 40px; border-radius: 12px; border: 0; color: #fff; font-size: 18px; background: rgba(8,12,30,.55); cursor: pointer; }
+  #autoBtn.on { background: linear-gradient(135deg, #22c55e, #0ea5e9); box-shadow: 0 0 14px rgba(34,197,94,.7); }
+  .adv-tog { border: 0; background: rgba(255,255,255,.08); color: #c7d2fe; font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 10px; cursor: pointer; }
+  #advSum { color: #86efac; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip { border: 0; font: inherit; font-size: 14px; padding: 7px 12px; border-radius: 10px; cursor: pointer; color: #e0e7ff; background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+  .chip.on { color: #fff; font-weight: 700; background: linear-gradient(135deg, #22c55e, #0ea5e9); box-shadow: 0 3px 10px rgba(14,165,233,.4); }
+  #quiz { background: rgba(5,8,25,.7); backdrop-filter: blur(4px); z-index: 60; }
+  .quizbox { display: flex; gap: 26px; align-items: center; }
+  .qleft { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 260px; }
+  .quizbox h2 { margin: 0; font-size: 22px; }
+  .qprog { display: flex; gap: 8px; } .qprog i { width: 16px; height: 16px; border-radius: 50%; background: rgba(255,255,255,.15); }
+  .qprog i.ok { background: #22c55e; box-shadow: 0 0 8px #22c55e; } .qprog i.cur { box-shadow: inset 0 0 0 3px #ffe066; }
+  .qq { font-size: 46px; font-weight: 900; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+  .qans { display: inline-block; min-width: 1.6em; padding: 0 8px; border-radius: 12px; background: rgba(255,255,255,.1); color: #ffe066; }
+  .qq.bad { animation: shakeX .35s; } .qq.good .qans { background: #16a34a; color: #fff; }
+  @keyframes shakeX { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+  .qmsg { font-size: 16px; min-height: 22px; color: #fde68a; }
+  .pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 10px; }
+  .pad button { height: 56px; border: 0; border-radius: 14px; font: inherit; font-size: 24px; font-weight: 800; color: #fff; cursor: pointer; background: rgba(255,255,255,.12); touch-action: manipulation; }
+  .pad button:active { transform: scale(.94); } .pad .ok { background: linear-gradient(135deg, #22c55e, #0ea5e9); font-size: 18px; } .pad .del { font-size: 18px; }
   #skipHint { position: absolute; bottom: 26px; right: 26px; font-size: 14px; color: #e0e7ff; padding: 8px 14px; border-radius: 12px; background: rgba(8,12,30,.55); }
   #wrongWay { position: absolute; left: 50%; top: 52%; transform: translateX(-50%); font-size: 30px; font-weight: 900; color: #fecaca; text-shadow: 0 2px 6px #000; }
 
@@ -131,7 +152,10 @@
     #zoneToast { top: 92px; font-size: 15px; } #toasts { top: 132px; } .toast { font-size: 14px; }
     #centerMsg { font-size: 80px; } .rk { font-size: 12px; min-width: 96px; } .rk img { display: none; }
     #speedo b { font-size: 34px; } #nitroBox { width: 170px; } #bottom { bottom: 8px; }
-    #pauseBtn { right: 136px; } #muteBtn { right: 182px; }
+    #pauseBtn { right: 136px; } #muteBtn { right: 182px; } #autoBtn { right: 228px; }
+    .chips { margin-top: 5px; gap: 6px; } .chip { padding: 5px 10px; font-size: 13px; } .adv-tog { padding: 4px 10px; font-size: 12px; }
+    .go { position: sticky; bottom: 0; z-index: 2; }
+    .quizbox { gap: 18px; } .quizbox h2 { font-size: 17px; } .qq { font-size: 36px; } .pad { grid-template-columns: repeat(3, 58px); gap: 7px; } .pad button { height: 46px; font-size: 21px; }
     .pd img { height: 80px; } .box { padding: 14px 18px; } .box h2 { font-size: 22px; margin-bottom: 6px; }
   }
   @media (orientation: portrait) and (max-width: 600px) {
@@ -142,7 +166,8 @@
     #rankList { left: 8px; top: 8px; } .rk { font-size: 12px; min-width: 80px; padding: 2px 10px 2px 3px; } .rk img { display: none; } .rk .n { width: 18px; height: 18px; font-size: 11px; }
     #topRight { right: 10px; top: 6px; } #rankBig { font-size: 40px; } #rankBig small { font-size: 18px; } #lapInfo { font-size: 16px; } #timer { font-size: 13px; }
     #minimap { width: 104px; height: 104px; top: 96px; right: 10px; }
-    #pauseBtn { right: 10px; top: 208px; } #muteBtn { right: 58px; top: 208px; }
+    #pauseBtn { right: 10px; top: 208px; } #muteBtn { right: 58px; top: 208px; } #autoBtn { right: 106px; top: 208px; }
+    .quizbox { flex-direction: column; gap: 14px; } .qleft { min-width: 0; } .quizbox h2 { font-size: 18px; }
     #itemSlot { width: 60px; height: 60px; font-size: 34px; border-radius: 16px; top: 8px; } #itemName { top: 72px; }
     #zoneToast { top: 92px; font-size: 14px; } #toasts { top: 128px; } .toast { font-size: 13px; } #centerMsg { font-size: 72px; }
     #tLeft { left: 12px; bottom: 22px; width: 78px; height: 78px; font-size: 30px; }
@@ -203,6 +228,10 @@
       <div class="row"><label>选择你的衣服颜色</label><div class="swatches" id="swatches"></div></div>
       <div class="row touch-only hidden"><label>手机转向方式</label>
         <div class="seg" id="segSteer"><button data-v="btn" class="on">按钮</button><button data-v="gyro">重力感应</button><button data-v="gyroR">重力（反向）</button></div></div>
+      <div class="row"><button class="adv-tog" id="advTog">⚙️ 高级选项 <span id="advSum"></span> <span id="advArrow">▾</span></button>
+        <div class="chips hidden" id="advBox">
+          <button class="chip" data-k="auto">🤖 自动巡航</button><button class="chip" data-k="infNitro">🔥 无限氮气</button><button class="chip" data-k="infItems">🎁 无限道具</button>
+        </div></div>
       <button class="go" id="startBtn">开始比赛</button>
       <div class="help desk-only">
         <b>↑ / W</b> 油门　<b>↓ / S</b> 刹车　<b>← → / A D</b> 转向<br>
@@ -227,6 +256,7 @@
     <div id="nitroBox"><div class="lbl"><span>氮气（漂移积攒）</span><span id="nitroCnt"></span></div><div id="nitroBar"><i></i></div></div>
   </div>
   <div id="speedoMini"><b id="spd2">0</b> <span class="tiny">km/h</span> <span id="nitroCnt2"></span><div class="mbar"><i id="nbar2"></i></div></div>
+  <button id="autoBtn" title="自动巡航 (Q)">🤖</button>
   <button id="muteBtn" title="声音">🔊</button>
   <button id="pauseBtn" title="暂停 (Esc)">⏸</button>
   <div id="skipHint" class="hidden">点击屏幕 / 按任意键跳过</div>
@@ -247,7 +277,18 @@
 <div id="results" class="ol hidden"><div class="box"><h2 id="resTitle">🏁 比赛结束</h2>
   <div class="podium" id="podium"></div>
   <table class="res" id="resTable"></table>
-  <div class="btns"><button class="btn pri" id="againBtn">再来一局</button><button class="btn" id="resMenuBtn">返回菜单</button></div></div></div>
+  <div class="btns"><button class="btn pri" id="againBtn">🧮 答题后再来一局</button><button class="btn" id="resMenuBtn">返回菜单</button></div></div></div>
+
+<div id="quiz" class="ol hidden"><div class="box quizbox">
+  <div class="qleft">
+    <h2>🧮 答对 5 道题，开始下一局</h2>
+    <div class="qprog" id="qProg"></div>
+    <div class="qq"><span id="qText">12 + 7</span> = <span class="qans" id="qAns">?</span></div>
+    <div class="qmsg" id="qMsg">&nbsp;</div>
+    <button class="btn" id="qMenuBtn">返回菜单</button>
+  </div>
+  <div class="pad" id="qPad"></div>
+</div></div>
 
 <div id="rotate" class="ol hidden"><div class="ph">📱</div><div>请把手机横过来玩</div><div class="tiny" id="rotTip">横屏视野更开阔；手机横过来没反应的话，请在下拉菜单里打开「自动旋转」</div>
   <div class="btns"><button class="btn pri" id="rotLockBtn">横屏全屏玩</button><button class="btn" id="rotSkipBtn">竖屏继续</button></div></div>
