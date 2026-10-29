@@ -213,8 +213,21 @@
     else LD.fail((e.message || '脚本错误') + ' @ ' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || ''));
   }, true);
   addEventListener('unhandledrejection', function (e) { LD.fail('Promise: ' + (e.reason && (e.reason.message || e.reason.type) || e.reason)); });
-  setInterval(function () { if (!window.GAME_READY && !LD.failed) LD(LD.last); }, 500);
-  LD('下载脚本');
+  var nJs = 0, slow = false;
+  addEventListener('load', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'SCRIPT' && t.src && /^下载脚本/.test(LD.last)) LD('下载脚本 ' + (++nJs) + '/10');
+  }, true);
+  setInterval(function () {
+    if (window.GAME_READY || LD.failed) return;
+    LD(LD.last);
+    if (!slow && Date.now() - t0 > 8000) {
+      slow = true;
+      var h = document.querySelector('#loading .tiny');
+      if (h) h.textContent = '网络较慢，正在努力下载，请稍候…';
+    }
+  }, 500);
+  LD('下载脚本 0/10');
 })();
 </script>
 
